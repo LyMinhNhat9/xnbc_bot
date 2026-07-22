@@ -1,0 +1,1 @@
+"""Telegram poll sender package."""
