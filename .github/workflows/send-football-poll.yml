@@ -2,21 +2,21 @@ name: Send weekly football poll
 
 on:
   schedule:
-    - cron: "0 11 * * 2"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   send-poll:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -24,4 +24,17 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python src/send_poll.py
+        run: python src/send_poll.py --mode scheduler
+
+      - name: Persist schedule/state changes
+        run: |
+          if git diff --quiet -- data/schedule.json data/state.json; then
+            echo "No schedule/state changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/schedule.json data/state.json
+          git commit -m "chore(bot): persist Telegram schedule state"
+          git push

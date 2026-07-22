@@ -1,6 +1,6 @@
 # Telegram football poll bot
 
-Bot này tạo poll trong Telegram group vào mỗi thứ Ba lúc 18:00 theo giờ Việt Nam (GMT+7).
+Bot này tạo poll trong Telegram group theo lịch có thể đổi trực tiếp từ Telegram.
 
 Poll được gửi có cấu hình cố định:
 
@@ -72,9 +72,30 @@ python3 -m unittest discover -s tests -v
 
 ### Chạy trên GitHub Actions
 
-Để chạy thử poll thật trên GitHub, vào **Actions → Send weekly football poll → Run workflow**. Mỗi lần bấm chạy thủ công sẽ tạo một poll mới.
+Để chạy thử bot trên GitHub, vào **Actions → Send weekly football poll → Run workflow**.
 
-Workflow tự động chạy bằng cron `0 11 * * 2`, tương ứng 11:00 UTC vào thứ Ba, tức 18:00 GMT+7. GitHub Actions có thể trễ nhẹ khi hệ thống tải cao; scheduled workflow cũng chạy trên branch mặc định.
+Workflow tự động chạy mỗi 5 phút bằng cron `*/5 * * * *` để:
+
+- đọc lệnh điều khiển trong Telegram
+- cập nhật lịch gửi poll vào `data/schedule.json`
+- gửi poll đúng khung giờ đã cấu hình
+
+### Điều khiển lịch ngay trong Telegram
+
+Bot hỗ trợ các lệnh:
+
+- `/set_schedule <thu> <HH:MM>` ví dụ `/set_schedule thu 18:30`
+- `/set_day <thu>` ví dụ `/set_day cn`
+- `/set_time <HH:MM>` ví dụ `/set_time 19:00`
+- `/set_timezone <IANA timezone>` ví dụ `/set_timezone Asia/Ho_Chi_Minh`
+- `/status` để xem lịch hiện tại
+- `/help` để xem hướng dẫn
+
+Gợi ý giá trị `thu`:
+
+- `2..8` (2=Monday, 3=Tuesday, ..., 8=Sunday)
+- hoặc `mon tue wed thu fri sat sun`
+- hoặc `cn` cho Chủ nhật
 
 ## Cấu trúc
 

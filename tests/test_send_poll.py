@@ -1,14 +1,18 @@
 import io
 import json
 import unittest
+from datetime import UTC, datetime
 from urllib.error import HTTPError
 
 from src.send_poll import (
     ConfigurationError,
+    ScheduleError,
     TelegramAPIError,
     build_poll_payload,
+    handle_command,
     load_config,
     send_poll,
+    should_send_now,
 )
 
 
@@ -103,6 +107,41 @@ class SendPollTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TelegramAPIError, "timed out"):
             send_poll("bot-token", "-1001234567890", opener=opener)
+
+    def test_handle_command_updates_day_and_time(self):
+        schedule, message = handle_command(
+            "/set_schedule tue 19:30",
+            {"weekday": 1, "time": "18:00", "timezone": "Asia/Ho_Chi_Minh"},
+        )
+
+        self.assertEqual(schedule["weekday"], 1)
+        self.assertEqual(schedule["time"], "19:30")
+        self.assertIn("Schedule updated", message)
+
+    def test_handle_command_rejects_unknown(self):
+        with self.assertRaises(ScheduleError):
+            handle_command(
+                "/abc",
+                {"weekday": 1, "time": "18:00", "timezone": "Asia/Ho_Chi_Minh"},
+            )
+
+    def test_should_send_now_within_window(self):
+        schedule = {"weekday": 1, "time": "18:00", "timezone": "Asia/Ho_Chi_Minh"}
+        now_utc = datetime(2026, 7, 21, 11, 4, tzinfo=UTC)
+
+        should_send, slot = should_send_now(schedule, now_utc=now_utc)
+
+        self.assertTrue(should_send)
+        self.assertEqual(slot, "2026-07-21-18:00")
+
+    def test_should_not_send_on_wrong_day(self):
+        schedule = {"weekday": 1, "time": "18:00", "timezone": "Asia/Ho_Chi_Minh"}
+        now_utc = datetime(2026, 7, 22, 11, 2, tzinfo=UTC)
+
+        should_send, slot = should_send_now(schedule, now_utc=now_utc)
+
+        self.assertFalse(should_send)
+        self.assertEqual(slot, "")
 
 
 if __name__ == "__main__":
